@@ -47,8 +47,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/config/homebox` - Data storage
-- `./rootfs/data/homebox` - Data storage
+- `./volumes/config/homebox` - Data storage
+- `./volumes/data/homebox` - Data storage
 
 ## 🔍 Logging
 
