@@ -1,5 +1,6 @@
 # nginx proxy address - http://172.17.0.1:8074
 
+name: homebox
 x-logging: &default-logging
   driver: json-file
   options:
@@ -7,28 +8,30 @@ x-logging: &default-logging
     max-file: "1"
 
 services:
-  homebox:
-    image: ghcr.io/hay-kot/homebox:latest
+  app:
+    image: ghcr.io/sysadminsmedia/homebox:latest
+    pull_policy: always
     container_name: homebox-app
-    restart: unless-stopped
+    restart: always
     logging: *default-logging
     networks:
       - homebox
     ports:
-      - "8074:7745"
+      - "172.17.0.1:8074:7745"
     environment:
       TZ: ${TZ:-America/New_York}
-      PUID: ${SERVICE_USER:-1000}
-      PGID: ${SERVICE_GROUP:-1000}
+      HBOX_LOG_LEVEL: info
+      HBOX_LOG_FORMAT: text
+      HBOX_WEB_MAX_UPLOAD_SIZE: ${HBOX_MAX_UPLOAD_MB:-10}
     volumes:
-      - ./volumes/config/homebox:/config
       - ./volumes/data/homebox:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:7745"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:7745/api/v1/status"]
       interval: 30s
       timeout: 10s
       retries: 3
 
 networks:
   homebox:
+    name: homebox
     external: false
