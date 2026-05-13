@@ -16,6 +16,8 @@ services:
     logging: *default-logging
     networks:
       - homebox
+      - proxy
+      - cloudflare
     ports:
       - "172.17.0.1:8074:7745"
     environment:
@@ -23,6 +25,8 @@ services:
       HBOX_LOG_LEVEL: info
       HBOX_LOG_FORMAT: text
       HBOX_WEB_MAX_UPLOAD_SIZE: ${HBOX_MAX_UPLOAD_MB:-10}
+      CONTAINER_NAME: homebox-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     volumes:
       - ./volumes/data/homebox:/data
     healthcheck:
@@ -30,8 +34,28 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://homebox-app:7745'
+      - 'cloudflare.hostname=homebox.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.homebox-app.entrypoints=http'
+      - 'traefik.http.routers.homebox-app-secure.tls=true'
+      - 'traefik.http.routers.homebox-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.homebox-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.homebox-app.middlewares=homebox-app-https-redirect'
+      - 'traefik.http.routers.homebox-app-secure.entrypoints=https'
+      - 'traefik.http.routers.homebox-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.homebox-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.homebox-app-secure.service=homebox-app'
+      - 'traefik.http.services.homebox-app.loadbalancer.server.port=7745'
 
 networks:
   homebox:
     name: homebox
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
